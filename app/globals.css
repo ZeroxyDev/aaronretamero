@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: "Site Font";
+  font-family: 'Site Font';
   src: url("/font.woff2") format("woff2");
-  font-style: normal;
   font-weight: 100 900;
+  font-style: normal;
   font-display: swap;
 }
 
@@ -16,6 +16,50 @@
   --color-border: #4f483b;
   --color-hover: #363228;
   --color-overlay: rgba(248, 247, 244, 0.05);
+
+  --font-settings:
+    /* Stylistic Set 01 – Single‑story a */
+    "ss01" 0,
+    /* Stylistic Set 02 – Single‑story g */
+    "ss02" 0,
+    /* Stylistic Set 03 – Curved shapes */
+    "ss03" 0,
+    /* Stylistic Set 04 – Flat shapes */
+    "ss04" 0,
+    /* Stylistic Set 05 – Curved numbers */
+    "ss05" 0,
+    /* Stylistic Set 06 – Flat C */
+    "ss06" 0,
+    /* Stylistic Set 07 – Flat G */
+    "ss07" 0,
+    /* Stylistic Set 08 – Flat S */
+    "ss08" 0,
+    /* Stylistic Set 09 – Flat a */
+    "ss09" 0,
+    /* Stylistic Set 10 – Flat c */
+    "ss10" 0,
+    /* Stylistic Set 11 – Flat e */
+    "ss11" 0,
+    /* Stylistic Set 12 – Flat single‑story g */
+    "ss12" 0,
+    /* Stylistic Set 13 – Flat s */
+    "ss13" 0,
+    /* Stylistic Set 14 – Curved question mark */
+    "ss14" 0,
+    /* Slashed zero – cero tachado */
+    "zero" 0,
+    /* Tabular figures – números ancho fijo */
+    "tnum" 0,
+    /* Automatic fractions */
+    "frac" 0,
+    /* Superscript */
+    "sups" 0,
+    /* Subscript */
+    "subs" 0,
+    /* Case-sensitive forms */
+    "case" 0,
+    /* Kerning – ajusta el espaciado entre caracteres */
+    "kern" 1;
 }
 
 @theme inline {
@@ -41,6 +85,7 @@ html {
 
 body {
   font-family: var(--font-sans);
+  font-feature-settings: var(--font-settings);
   background: var(--color-canvas);
   color: var(--color-ink);
   text-rendering: optimizeLegibility;
