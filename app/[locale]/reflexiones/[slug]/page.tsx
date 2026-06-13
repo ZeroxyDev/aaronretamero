@@ -95,6 +95,8 @@ export default async function ReflectionPage(props: ReflectionPageProps) {
 
   const adjacent = getAdjacentReflections(locale, slug);
   const t = await getTranslator(locale, "pages.reflection");
+  const siteName = await translateMessage(locale, siteConfig.seo.siteNameKey);
+  const siteHandle = await translateMessage(locale, siteConfig.seo.siteHandleKey);
   const routeMap = Object.fromEntries(
     Object.entries(getAlternateReflectionSlugs(reflection.entryId)).map(
       ([entryLocale, entrySlug]) => [
@@ -123,7 +125,21 @@ export default async function ReflectionPage(props: ReflectionPageProps) {
           </p>
           <Meta locale={locale} reflection={reflection} />
         </header>
-        <Body content={reflection.content} />
+        <Body
+          content={reflection.content}
+          reflectionTitle={reflection.title}
+          footerTitle={t("shareFooterTitle", { title: reflection.title })}
+          footerMeta={t("shareFooterMeta", {
+            author: siteName,
+            handle: siteHandle,
+          })}
+          siteDomain={siteConfig.domain}
+          shareLabel={t("shareSelection")}
+          shareFallbackLabel={t("shareFallback")}
+          copiedLabel={t("shareCopied")}
+          downloadLabel={t("shareDownloaded")}
+          selectionHint={t("shareHint")}
+        />
 
         <Adjacent locale={locale} previous={adjacent.previous} next={adjacent.next} />
       </article>

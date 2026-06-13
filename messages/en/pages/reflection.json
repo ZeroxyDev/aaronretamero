@@ -1,3 +1,10 @@
 {
-  "backToArchive": "← Archive"
+  "backToArchive": "← Archive",
+  "shareSelection": "Share quote",
+  "shareFallback": "Couldn't share",
+  "shareCopied": "Quote copied",
+  "shareDownloaded": "Image downloaded",
+  "shareHint": "Select a sentence to share it",
+  "shareFooterTitle": "“{title}”",
+  "shareFooterMeta": "a reflection by {author} ({handle})"
 }

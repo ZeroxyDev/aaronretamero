@@ -106,7 +106,7 @@ export function LocaleSwitcher({
         onClick={toggleMenu}
         className="inline-flex h-4 items-center leading-none text-muted hover:text-ink"
       >
-        <UiIcon icon={icons.globe} className="relative top-[2px] block size-[0.95rem]" />
+        <UiIcon icon={icons.globe} className="relative top-[1px] sm:top-[2px] block size-[0.95rem]" />
       </button>
 
       {isOpen ? (

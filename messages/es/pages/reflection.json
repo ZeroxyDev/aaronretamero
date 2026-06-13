@@ -1,3 +1,10 @@
 {
-  "backToArchive": "← Archivo"
+  "backToArchive": "← Archivo",
+  "shareSelection": "Compartir frase",
+  "shareFallback": "No se pudo compartir",
+  "shareCopied": "Frase copiada",
+  "shareDownloaded": "Imagen descargada",
+  "shareHint": "Selecciona una frase para compartirla",
+  "shareFooterTitle": "“{title}”",
+  "shareFooterMeta": "una reflexión de {author} ({handle})"
 }
