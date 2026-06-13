@@ -82,9 +82,9 @@ const POPOVER_WIDTH = 248;
 const POPOVER_HEIGHT = 64;
 const VIEWPORT_MARGIN = 12;
 const SHARE_CARD_FONT_LOADS = [
-  "600 84px 'Site Font'",
-  "520 84px 'Site Font'",
-  "500 30px 'Site Font'",
+  "normal 600 84px 'Site Font'",
+  "normal 520 84px 'Site Font'",
+  "normal 500 30px 'Site Font'",
 ];
 
 export function ShareableBody({
@@ -543,6 +543,10 @@ function applyCanvasTypography(context: CanvasRenderingContext2D) {
   if ("fontVariationSettings" in variableContext) {
     variableContext.fontVariationSettings = '"slnt" 0';
   }
+
+  if ("fontKerning" in context) {
+    context.fontKerning = "normal";
+  }
 }
 
 function getShareCardTextLayout(
@@ -584,17 +588,17 @@ function drawShareCardFooter(
   context.filter = "none";
 
   const footerTitleY = CARD_HEIGHT - CARD_BOTTOM - 108;
-  context.font = "600 30px 'Site Font', sans-serif";
+  setCanvasFont(context, 600, 30);
   context.fillStyle = "rgba(173, 162, 139, 0.92)";
   context.fillText(footerTitle, CARD_PADDING_X, footerTitleY);
 
   const footerBylineY = footerTitleY + FOOTER_LINE_GAP;
-  context.font = "500 24px 'Site Font', sans-serif";
+  setCanvasFont(context, 500, 24);
   context.fillStyle = "rgba(248, 247, 244, 0.95)";
   context.fillText(footerMeta, CARD_PADDING_X, footerBylineY);
 
   const footerDomainY = footerBylineY + FOOTER_LINE_GAP;
-  context.font = "500 21px 'Site Font', sans-serif";
+  setCanvasFont(context, 500, 21);
   context.fillStyle = "rgba(173, 162, 139, 0.82)";
   context.fillText(siteDomain, CARD_PADDING_X, footerDomainY);
 }
@@ -670,7 +674,7 @@ function layoutTextTokens(
   maxWidth: number,
   fontSize: number,
 ) {
-  context.font = `600 ${fontSize}px 'Site Font', sans-serif`;
+  setCanvasFont(context, 600, fontSize);
 
   const lines: TextLine[] = [];
   let currentTokens: TextToken[] = [];
@@ -738,7 +742,7 @@ function drawStyledTextBlock(
     const y = startY + index * layout.lineHeight + baselineAdjustment;
 
     line.tokens.forEach((token) => {
-      context.font = `${token.highlighted ? 600 : 520} ${layout.fontSize}px 'Site Font', sans-serif`;
+      setCanvasFont(context, token.highlighted ? 600 : 520, layout.fontSize);
       context.filter = token.highlighted ? "none" : "blur(7px)";
       context.fillStyle = token.highlighted
         ? "rgba(248, 247, 244, 0.98)"
@@ -747,4 +751,12 @@ function drawStyledTextBlock(
       cursorX += context.measureText(token.text).width;
     });
   });
+}
+
+function setCanvasFont(
+  context: CanvasRenderingContext2D,
+  weight: number,
+  size: number,
+) {
+  context.font = `normal ${weight} ${size}px "Site Font", sans-serif`;
 }
