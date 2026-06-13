@@ -39,8 +39,12 @@ type TextToken = {
   text: string;
 };
 
+type TextRun = TextToken & {
+  width: number;
+};
+
 type TextLine = {
-  tokens: TextToken[];
+  tokens: TextRun[];
   width: number;
 };
 
@@ -67,6 +71,8 @@ type ShareCardFooter = Pick<
 type CanvasContextWithFontVariation = CanvasRenderingContext2D & {
   fontVariationSettings?: string;
 };
+
+let embeddedSiteFontCssPromise: Promise<string> | null = null;
 
 const MIN_SELECTION_LENGTH = 12;
 const CONTEXT_CHARACTERS = 120;
@@ -495,19 +501,24 @@ async function renderShareCard({
     quote,
     trimContext(after, true),
   );
+  const measurementCanvas = document.createElement("canvas");
+  const measurementContext = measurementCanvas.getContext("2d");
+
+  if (!measurementContext) {
+    throw new Error("Canvas not available");
+  }
+
+  applyCanvasTypography(measurementContext);
+
+  const textLayout = getShareCardTextLayout(measurementContext, textTokens, maxWidth);
+  const svgMarkup = await buildShareCardSvg(textLayout, {
+    footerTitle,
+    footerMeta,
+    siteDomain,
+  });
   const { canvas, context } = createShareCanvas();
-  const textLayout = getShareCardTextLayout(context, textTokens, maxWidth);
 
-  drawShareCardBackground(context);
-  drawStyledTextBlock(
-    context,
-    textLayout.lines,
-    CARD_PADDING_X,
-    getTextBlockStartY(textLayout),
-    textLayout,
-  );
-  drawShareCardFooter(context, { footerTitle, footerMeta, siteDomain });
-
+  await drawSvgMarkupToCanvas(context, svgMarkup);
   return exportCanvasAsPng(canvas);
 }
 
@@ -535,6 +546,67 @@ function createShareCanvas() {
   applyCanvasTypography(context);
 
   return { canvas, context };
+}
+
+async function buildShareCardSvg(
+  textLayout: TextLayout,
+  footer: ShareCardFooter,
+) {
+  const fontFaceCss = await getEmbeddedSiteFontCss();
+  const textStartY = getTextBlockStartY(textLayout);
+  const textMarkup = buildShareCardTextSvg(textLayout, CARD_PADDING_X, textStartY);
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" viewBox="0 0 ${CARD_WIDTH} ${CARD_HEIGHT}" fill="none">
+      <defs>
+        <linearGradient id="card-glow" x1="0" y1="0" x2="${CARD_WIDTH}" y2="${CARD_HEIGHT}" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#f8f7f4" stop-opacity="0.08" />
+          <stop offset="0.5" stop-color="#f8f7f4" stop-opacity="0.03" />
+          <stop offset="1" stop-color="#f8f7f4" stop-opacity="0" />
+        </linearGradient>
+        <filter id="context-blur" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="3.5" />
+        </filter>
+        <style>
+          ${fontFaceCss}
+          .share-card-text {
+            font-family: "Site Font", sans-serif;
+            font-style: normal;
+            font-variation-settings: "slnt" 0;
+            font-synthesis: none;
+            letter-spacing: -0.01em;
+            white-space: pre;
+          }
+          .share-card-footer-title {
+            fill: rgba(173, 162, 139, 0.92);
+            font-size: 30px;
+            font-weight: 600;
+          }
+          .share-card-footer-meta {
+            fill: rgba(248, 247, 244, 0.95);
+            font-size: 24px;
+            font-weight: 500;
+          }
+          .share-card-footer-domain {
+            fill: rgba(173, 162, 139, 0.82);
+            font-size: 21px;
+            font-weight: 500;
+          }
+          .share-card-context {
+            fill: rgba(173, 162, 139, 0.8);
+          }
+          .share-card-quote {
+            fill: rgba(248, 247, 244, 0.98);
+          }
+        </style>
+      </defs>
+
+      <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="#1a1917" />
+      <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="url(#card-glow)" />
+      ${textMarkup}
+      ${buildShareCardFooterSvg(footer)}
+    </svg>
+  `.trim();
 }
 
 function applyCanvasTypography(context: CanvasRenderingContext2D) {
@@ -567,40 +639,6 @@ function getTextBlockStartY(textLayout: TextLayout) {
     CARD_TOP,
     CARD_HEIGHT - CARD_BOTTOM - FOOTER_GAP - textBlockHeight,
   );
-}
-
-function drawShareCardBackground(context: CanvasRenderingContext2D) {
-  context.fillStyle = "#1a1917";
-  context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-  const gradient = context.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  gradient.addColorStop(0, "rgba(248, 247, 244, 0.08)");
-  gradient.addColorStop(0.5, "rgba(248, 247, 244, 0.03)");
-  gradient.addColorStop(1, "rgba(248, 247, 244, 0)");
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-}
-
-function drawShareCardFooter(
-  context: CanvasRenderingContext2D,
-  { footerTitle, footerMeta, siteDomain }: ShareCardFooter,
-) {
-  context.filter = "none";
-
-  const footerTitleY = CARD_HEIGHT - CARD_BOTTOM - 108;
-  setCanvasFont(context, 600, 30);
-  context.fillStyle = "rgba(173, 162, 139, 0.92)";
-  context.fillText(footerTitle, CARD_PADDING_X, footerTitleY);
-
-  const footerBylineY = footerTitleY + FOOTER_LINE_GAP;
-  setCanvasFont(context, 500, 24);
-  context.fillStyle = "rgba(248, 247, 244, 0.95)";
-  context.fillText(footerMeta, CARD_PADDING_X, footerBylineY);
-
-  const footerDomainY = footerBylineY + FOOTER_LINE_GAP;
-  setCanvasFont(context, 500, 21);
-  context.fillStyle = "rgba(173, 162, 139, 0.82)";
-  context.fillText(siteDomain, CARD_PADDING_X, footerDomainY);
 }
 
 function exportCanvasAsPng(canvas: HTMLCanvasElement) {
@@ -677,7 +715,7 @@ function layoutTextTokens(
   setCanvasFont(context, 600, fontSize);
 
   const lines: TextLine[] = [];
-  let currentTokens: TextToken[] = [];
+  let currentTokens: TextRun[] = [];
   let currentWidth = 0;
 
   tokens.forEach((token) => {
@@ -699,7 +737,7 @@ function layoutTextTokens(
       return;
     }
 
-    currentTokens.push(token);
+    currentTokens.push({ ...token, width: tokenWidth });
     currentWidth += tokenWidth;
   });
 
@@ -712,7 +750,7 @@ function layoutTextTokens(
 
 function trimTrailingWhitespace(
   context: CanvasRenderingContext2D,
-  tokens: TextToken[],
+  tokens: TextRun[],
 ) {
   const trimmedTokens = [...tokens];
 
@@ -728,35 +766,132 @@ function trimTrailingWhitespace(
   return { tokens: trimmedTokens, width };
 }
 
-function drawStyledTextBlock(
-  context: CanvasRenderingContext2D,
-  lines: TextLine[],
-  x: number,
-  startY: number,
-  layout: { fontSize: number; lineHeight: number },
-) {
-  const baselineAdjustment = layout.fontSize;
-
-  lines.forEach((line, index) => {
-    let cursorX = x;
-    const y = startY + index * layout.lineHeight + baselineAdjustment;
-
-    line.tokens.forEach((token) => {
-      setCanvasFont(context, token.highlighted ? 600 : 520, layout.fontSize);
-      context.filter = token.highlighted ? "none" : "blur(7px)";
-      context.fillStyle = token.highlighted
-        ? "rgba(248, 247, 244, 0.98)"
-        : "rgba(173, 162, 139, 0.8)";
-      context.fillText(token.text, cursorX, y);
-      cursorX += context.measureText(token.text).width;
-    });
-  });
-}
-
 function setCanvasFont(
   context: CanvasRenderingContext2D,
   weight: number,
   size: number,
 ) {
   context.font = `normal ${weight} ${size}px "Site Font", sans-serif`;
+}
+
+function buildShareCardTextSvg(
+  layout: TextLayout,
+  x: number,
+  startY: number,
+) {
+  const baselineAdjustment = layout.fontSize;
+
+  return layout.lines
+    .map((line, index) => {
+      let cursorX = x;
+      const y = startY + index * layout.lineHeight + baselineAdjustment;
+
+      const tokensMarkup = line.tokens
+        .map((token) => {
+          const tokenMarkup = `<text class="share-card-text ${token.highlighted ? "share-card-quote" : "share-card-context"}" x="${roundSvgNumber(cursorX)}" y="${roundSvgNumber(y)}" font-size="${layout.fontSize}" font-weight="${token.highlighted ? 600 : 520}"${token.highlighted ? "" : ' filter="url(#context-blur)"'}>${escapeSvgText(token.text)}</text>`;
+          cursorX += token.width;
+          return tokenMarkup;
+        })
+        .join("");
+
+      return `<g>${tokensMarkup}</g>`;
+    })
+    .join("");
+}
+
+function buildShareCardFooterSvg({
+  footerTitle,
+  footerMeta,
+  siteDomain,
+}: ShareCardFooter) {
+  const footerTitleY = CARD_HEIGHT - CARD_BOTTOM - 108;
+  const footerBylineY = footerTitleY + FOOTER_LINE_GAP;
+  const footerDomainY = footerBylineY + FOOTER_LINE_GAP;
+
+  return `
+    <g>
+      <text class="share-card-text share-card-footer-title" x="${CARD_PADDING_X}" y="${footerTitleY}">${escapeSvgText(footerTitle)}</text>
+      <text class="share-card-text share-card-footer-meta" x="${CARD_PADDING_X}" y="${footerBylineY}">${escapeSvgText(footerMeta)}</text>
+      <text class="share-card-text share-card-footer-domain" x="${CARD_PADDING_X}" y="${footerDomainY}">${escapeSvgText(siteDomain)}</text>
+    </g>
+  `.trim();
+}
+
+async function getEmbeddedSiteFontCss() {
+  if (!embeddedSiteFontCssPromise) {
+    embeddedSiteFontCssPromise = fetch("/font.woff2")
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Unable to load share font");
+        }
+
+        const buffer = await response.arrayBuffer();
+        const base64 = arrayBufferToBase64(buffer);
+
+        return `
+          @font-face {
+            font-family: "Site Font";
+            src: url("data:font/woff2;base64,${base64}") format("woff2");
+            font-weight: 100 900;
+            font-style: normal;
+            font-variation-settings: "slnt" 0;
+            font-synthesis: none;
+            font-display: block;
+          }
+        `.trim();
+      });
+  }
+
+  return embeddedSiteFontCssPromise;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
+}
+
+async function drawSvgMarkupToCanvas(
+  context: CanvasRenderingContext2D,
+  svgMarkup: string,
+) {
+  const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl = URL.createObjectURL(svgBlob);
+
+  try {
+    const image = await loadSvgImage(svgUrl);
+    context.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+    context.drawImage(image, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
+function loadSvgImage(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to render share image"));
+    image.src = url;
+  });
+}
+
+function escapeSvgText(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function roundSvgNumber(value: number) {
+  return Number(value.toFixed(2));
 }
