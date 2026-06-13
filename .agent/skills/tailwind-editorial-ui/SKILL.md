@@ -15,8 +15,8 @@ description: Use when editing UI, layout, typography, spacing, or visual hierarc
 
 - Prefer server components unless interaction requires client code.
 - Use existing tokens from `app/globals.css`.
-- Preserve the project font contract: `Site Font` is loaded from `/font.woff2`, spans weights `100 900`, uses `font-style: normal`, and is rendered with `font-variation-settings: "slnt" 0`.
-- Any generated image or canvas text should use the same `Site Font` and wait for the font to load before drawing.
+- Preserve the project font contract: `Site Font` is loaded from `/font.woff2`, spans weights `100 900`, uses `font-style: normal`, and is rendered with `font-variation-settings: "slnt" 0` in both `@font-face` and normal page text.
+- Any generated image or canvas text should use the same `Site Font`, wait for the font to load before drawing, and force `"slnt" 0` when supported.
 - Keep the site visually quiet: no loud gradients, heavy shadows, startup cards, or decorative animation.
 - Preserve the established component structure:
   - `components/layout/*`

@@ -46,11 +46,12 @@ The site uses a single local variable font:
   src: url("/font.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
+  font-variation-settings: "slnt" 0;
   font-display: swap;
 }
 ```
 
-Global text should keep `font-variation-settings: "slnt" 0;` as the default. Generated images, including shareable reflection quote cards, should use the same `Site Font` and wait for the browser font to load before drawing canvas text.
+Global text should keep `font-variation-settings: "slnt" 0;` as the default. Generated images, including shareable reflection quote cards, should use the same `Site Font`, wait for the browser font to load before drawing canvas text, and explicitly apply `"slnt" 0` when the canvas API supports font variation settings.
 
 ## Project Structure
 

@@ -64,6 +64,10 @@ type ShareCardFooter = Pick<
   "footerTitle" | "footerMeta" | "siteDomain"
 >;
 
+type CanvasContextWithFontVariation = CanvasRenderingContext2D & {
+  fontVariationSettings?: string;
+};
+
 const MIN_SELECTION_LENGTH = 12;
 const CONTEXT_CHARACTERS = 120;
 const CONTEXT_LOOKAROUND_CHARACTERS = 420;
@@ -528,7 +532,17 @@ function createShareCanvas() {
     throw new Error("Canvas not available");
   }
 
+  applyCanvasTypography(context);
+
   return { canvas, context };
+}
+
+function applyCanvasTypography(context: CanvasRenderingContext2D) {
+  const variableContext = context as CanvasContextWithFontVariation;
+
+  if ("fontVariationSettings" in variableContext) {
+    variableContext.fontVariationSettings = '"slnt" 0';
+  }
 }
 
 function getShareCardTextLayout(
