@@ -4,6 +4,7 @@ import { parseContentDocument } from "./content";
 import { defaultLocale, locales, type Locale } from "./i18n/config";
 
 const REFLECTIONS_DIR = path.join(process.cwd(), "content", "reflections");
+const ESTIMATED_READING_WORDS_PER_MINUTE = 250;
 
 export type ReflectionFrontmatter = {
   id: string;
@@ -293,4 +294,23 @@ export function formatDisplayDate(date: string, _time: string, locale: Locale) {
 
 export function formatViews(views: number, locale: Locale) {
   return new Intl.NumberFormat(locale).format(views);
+}
+
+export function estimateReadingTimeMinutes(content: string) {
+  const normalized = content
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[#>*_~\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) {
+    return 1;
+  }
+
+  const words = normalized.split(" ").filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / ESTIMATED_READING_WORDS_PER_MINUTE));
 }

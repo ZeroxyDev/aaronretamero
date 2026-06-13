@@ -1,3 +1,4 @@
 {
+  "readingTime": "{count, plural, one {# min de lectura} other {# min de lectura}}",
   "views": "{count, plural, one {visita} other {visitas}}"
 }

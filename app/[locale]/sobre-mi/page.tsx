@@ -69,7 +69,7 @@ export default async function AboutPage(props: AboutPageProps) {
       </div>
       <article className="archive-shell">
         <header>
-          <h1 className="max-w-3xl text-balance text-[2.5rem] font-medium tracking-[-0.05em] text-ink sm:text-[3.3rem]">
+          <h1 className="max-w-3xl text-balance text-[2.5rem] font-medium leading-[0.98] tracking-[-0.05em] text-ink sm:text-[3.3rem]">
             {about.title}
           </h1>
           <p className="mt-2 max-w-2xl text-[1.02rem] leading-8 text-muted sm:text-[1.08rem]">
