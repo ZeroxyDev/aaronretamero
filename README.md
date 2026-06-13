@@ -36,6 +36,22 @@ This repository powers a content-first personal site with three main layers:
 - Tailwind CSS 4
 - Local MDX content
 
+## Typography
+
+The site uses a single local variable font:
+
+```css
+@font-face {
+  font-family: 'Site Font';
+  src: url("/font.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+```
+
+Global text should keep `font-variation-settings: "slnt" 0;` as the default. Generated images, including shareable reflection quote cards, should use the same `Site Font` and wait for the browser font to load before drawing canvas text.
+
 ## Project Structure
 
 ```text

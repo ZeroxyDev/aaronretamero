@@ -77,6 +77,11 @@ const FOOTER_LINE_GAP = 42;
 const POPOVER_WIDTH = 248;
 const POPOVER_HEIGHT = 64;
 const VIEWPORT_MARGIN = 12;
+const SHARE_CARD_FONT_LOADS = [
+  "600 84px 'Site Font'",
+  "520 84px 'Site Font'",
+  "500 30px 'Site Font'",
+];
 
 export function ShareableBody({
   content,
@@ -478,6 +483,8 @@ async function renderShareCard({
   quote,
   after,
 }: ShareCardPayload) {
+  await loadShareCardFonts();
+
   const maxWidth = CARD_WIDTH - CARD_PADDING_X * 2;
   const textTokens = buildTextTokens(
     trimContext(before, false),
@@ -498,6 +505,16 @@ async function renderShareCard({
   drawShareCardFooter(context, { footerTitle, footerMeta, siteDomain });
 
   return exportCanvasAsPng(canvas);
+}
+
+async function loadShareCardFonts() {
+  if (!("fonts" in document)) {
+    return;
+  }
+
+  await Promise.all(
+    SHARE_CARD_FONT_LOADS.map((font) => document.fonts.load(font)),
+  );
 }
 
 function createShareCanvas() {

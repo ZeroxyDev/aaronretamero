@@ -10,6 +10,8 @@
 
 - Use Tailwind v4 utilities consistently.
 - Reuse existing design tokens from `app/globals.css`.
+- The default typeface is always `Site Font` from `/font.woff2` with `font-weight: 100 900`, `font-style: normal`, `font-display: swap`, and `font-variation-settings: "slnt" 0`.
+- Generated canvas images must also use `Site Font`; load it through `document.fonts` before drawing text so the share image does not fall back to a system font.
 - Prefer spacing and typography changes over borders, shadows, or visual effects.
 - Keep layouts breathable but compact where the product already trends compact.
 
