@@ -1,26 +1,110 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Site Font";
+  src: url("/font.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-canvas: #1a1917;
+  --color-surface: #322f28;
+  --color-ink: #f8f7f4;
+  --color-muted: #ada28b;
+  --color-border: #4f483b;
+  --color-hover: #363228;
+  --color-overlay: rgba(248, 247, 244, 0.05);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-ink: var(--color-ink);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+  --color-hover: var(--color-hover);
+  --color-overlay: var(--color-overlay);
+  --font-sans: "Site Font", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Site Font", ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-canvas);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+}
+
+@layer base {
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .archive-shell {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 58rem;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.2;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .shell {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 72rem;
+    padding-inline: 1.5rem;
+  }
+
+  .page-shell {
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .archive-back-link {
+    align-items: center;
+    gap: 0.55rem;
+    border-radius: 999px;
+    color: var(--color-muted);
+    font-size: 0.97rem;
+  }
+
+  .archive-back-link:hover {
+    color: var(--color-ink);
+  }
+
+  .reflection-prose {
+    color: color-mix(in srgb, var(--color-ink) 94%, transparent);
+  }
+
+  @media (max-width: 640px) {
+    .shell {
+      padding-inline: 1rem;
+    }
+  }
 }

@@ -1,0 +1,3 @@
+{
+  "views": "{count, plural, one {view} other {views}}"
+}
