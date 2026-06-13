@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { GlobeIcon } from "@/components/ui/icons";
+import { icons } from "@/components/ui/icons";
+import { UiIcon } from "@/components/ui/ui-icon";
 import { getLocaleNativeName, type Locale } from "@/lib/i18n/config";
 
 type LocaleSwitcherProps = {
@@ -105,7 +106,7 @@ export function LocaleSwitcher({
         onClick={toggleMenu}
         className="inline-flex h-4 items-center leading-none text-muted hover:text-ink"
       >
-        <GlobeIcon className="relative top-[2px] block size-[0.95rem]" />
+        <UiIcon icon={icons.globe} className="relative top-[2px] block size-[0.95rem]" />
       </button>
 
       {isOpen ? (

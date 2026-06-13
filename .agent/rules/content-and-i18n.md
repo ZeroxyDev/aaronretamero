@@ -48,6 +48,7 @@
   - `time`
 - Locale-specific fields:
   - `locale`
+  - `pinned`
   - `title`
   - `slug`
   - `excerpt`
@@ -57,6 +58,9 @@
 - Do not store `views`, `fragmentNumber`, or derived archive fields in frontmatter.
 - `lib/reflections.ts` is the source of truth for reading, grouping, sorting, alternate locale lookup, adjacent reflections, and display-date formatting.
 - Reflections are grouped by year in the landing archive and sorted by `date` plus `time` descending.
+- Pinned reflections are rendered above the archive as a dedicated timeline-style block.
+- Only up to 3 pinned reflections should be surfaced on the home archive, ordered by `date` plus `time` descending.
+- Pinned reflections should not be duplicated again inside the year-grouped archive listing.
 
 ## Translation Workflow
 
@@ -73,6 +77,7 @@
 - The CLI writes translated files back into:
   - `content/reflections/<locale>/<year>/<month>/`
   - `content/about/<locale>.mdx`
+- Reflection translation and locale-generation flows must preserve the source reflection's `pinned` value.
 - The translation workflow requires `OPENAI_KEY`.
 
 ## SEO

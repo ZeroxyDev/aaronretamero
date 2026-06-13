@@ -83,6 +83,8 @@ export default async function LocaleLayout(props: LocaleLayoutProps) {
             name={siteName}
             handle={siteHandle}
             profileUrl={siteConfig.social.primaryProfileUrl}
+            sourceUrl={siteConfig.social.sourceUrl}
+            sourceLabel={tFooter("source")}
             text={tFooter("minimal")}
           />
         </div>

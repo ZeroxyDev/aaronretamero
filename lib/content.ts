@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-function parseFrontmatterValue(rawValue: string): string | string[] | number {
+function parseFrontmatterValue(rawValue: string): string | string[] | number | boolean {
   const value = rawValue.trim();
 
   if (value.startsWith("[") && value.endsWith("]")) {
@@ -13,6 +13,14 @@ function parseFrontmatterValue(rawValue: string): string | string[] | number {
 
   if (/^\d+$/.test(value)) {
     return Number(value);
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
   }
 
   return value.replace(/^"(.*)"$/, "$1");

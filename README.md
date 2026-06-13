@@ -29,6 +29,7 @@ This repository powers a content-first personal site with three main layers:
 - Next.js 16.2.9
 - React 19
 - TypeScript
+- Iconify + Solar icons
 - `next-intl`
 - Prisma 7
 - PostgreSQL
@@ -76,6 +77,13 @@ Important content locations:
 - Routing is configured through `next-intl` in `lib/i18n/routing.ts`.
 - UI messages are loaded per bundle from `messages/<locale>/...`.
 - The locale switcher uses each locale's `nativeName`.
+- UI icons are centralized through a small Solar icon registry in `components/ui/icons.tsx` and rendered through `components/ui/ui-icon.tsx`.
+
+### Footer source link
+
+- The footer includes a source-code link driven by `siteConfig.social.sourceUrl`.
+- The link label is localized through the `components.layout.footer` message bundle.
+- The visual icon for that link uses the Solar icon set.
 
 ### Reflection view tracking
 
@@ -233,12 +241,20 @@ Shared fields across locale variants:
 Locale-owned fields:
 
 - `locale`
+- `pinned`
 - `title`
 - `slug`
 - `excerpt`
 - `tags`
 - `state`
 - body content
+
+Pinned reflections:
+
+- Can be marked with `pinned: true` in frontmatter.
+- Are surfaced above the archive in a dedicated timeline-style block.
+- Are limited to the 3 most recent pinned entries, ordered by `date` and `time` descending.
+- Are not repeated again inside the year-grouped archive list.
 
 ### About documents
 
@@ -277,6 +293,8 @@ Output is written back into:
 - `content/reflections/<locale>/<year>/<month>/`
 - `content/about/<locale>.mdx`
 
+The translation flow preserves shared editorial metadata such as `id`, `date`, `time`, and `pinned`.
+
 ### Add a brand new locale
 
 Run:
@@ -307,6 +325,8 @@ Depending on your choices, it updates:
 - `messages/<locale>/**.json`
 - `content/about/<locale>.mdx`
 - `content/reflections/<locale>/<year>/<month>/<slug>.mdx`
+
+When a reflection is translated through this flow, the source reflection's `pinned` value is preserved in generated locale variants.
 
 ## Deployment
 

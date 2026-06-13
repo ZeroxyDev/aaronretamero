@@ -18,6 +18,7 @@ type ReflectionDocument = {
   slug: string;
   date: string;
   time: string;
+  pinned: boolean;
   excerpt: string;
   tags: string[];
   state: string;
@@ -80,7 +81,7 @@ function listFiles(directoryPath: string): string[] {
 }
 
 function parseReflectionFile(filePath: string): ReflectionDocument {
-  const { frontmatter, content } = parseContentDocument<Record<string, string | string[]>>(
+  const { frontmatter, content } = parseContentDocument<Record<string, string | string[] | boolean>>(
     readDocumentFile(filePath),
   );
   const locale = String(frontmatter.locale) as Locale;
@@ -97,6 +98,7 @@ function parseReflectionFile(filePath: string): ReflectionDocument {
     slug: String(frontmatter.slug),
     date: String(frontmatter.date),
     time: String(frontmatter.time),
+    pinned: frontmatter.pinned === true || String(frontmatter.pinned).toLowerCase() === "true",
     excerpt: String(frontmatter.excerpt),
     tags: Array.isArray(frontmatter.tags) ? frontmatter.tags.map(String) : [],
     state: String(frontmatter.state),
@@ -245,6 +247,7 @@ function buildDocument(source: ContentDocument, locale: Locale, translation: Con
       `slug: ${stringifyFrontmatterValue(reflectionTranslation.slug)}`,
       `date: ${JSON.stringify(source.date)}`,
       `time: ${JSON.stringify(source.time)}`,
+      `pinned: ${JSON.stringify(source.pinned)}`,
       `excerpt: ${stringifyFrontmatterValue(reflectionTranslation.excerpt)}`,
       `tags: ${stringifyFrontmatterValue(reflectionTranslation.tags)}`,
       `state: ${stringifyFrontmatterValue(reflectionTranslation.state)}`,

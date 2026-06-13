@@ -17,7 +17,7 @@ description: Use when working on reflections, archive timelines, reflection meta
 - Content lives in `content/reflections/<locale>/<year>/<month>/<slug>.mdx`.
 - Keep the shared `id` aligned across locales for the same reflection.
 - Keep `date` and `time` aligned across locales for the same reflection.
-- Treat `slug`, `title`, `excerpt`, `tags`, `state`, and body as locale-owned fields.
+- Treat `pinned`, `slug`, `title`, `excerpt`, `tags`, `state`, and body as locale-owned fields.
 - Reflection file placement should follow its publication year and month.
 - Reflection pages should feel like dated archive entries, not blog posts or social content.
 
@@ -40,6 +40,9 @@ description: Use when working on reflections, archive timelines, reflection meta
 - Views, date, and title should remain subordinate to reading flow.
 - Keep list density intentional and minimal.
 - Landing grouping is by year, with each entry rendered as a compact text row.
+- Pinned reflections may appear above the dated archive in a dedicated timeline-style block.
+- Show at most 3 pinned reflections, ordered newest-first by `date` plus `time`.
+- Do not render pinned reflections a second time inside the dated archive list.
 
 ## Translation Workflow
 
@@ -48,6 +51,7 @@ description: Use when working on reflections, archive timelines, reflection meta
   - shared `id`
   - `date`
   - `time`
+  - `pinned`
   - Markdown structure
 - After translation, review the target `slug` and editorial tone before publishing.
 

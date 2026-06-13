@@ -28,7 +28,7 @@
 - Avoid architectural drift: if a pattern already exists for config, i18n, API, or DB, extend that pattern instead of adding a parallel one.
 - Reflection source files live at `content/reflections/<locale>/<year>/<month>/<slug>.mdx`.
 - Locale variants of the same reflection must share the same frontmatter `id`.
-- Reflection frontmatter should use `id`, `locale`, `title`, `slug`, `date`, `time`, `excerpt`, `tags`, and `state`.
+- Reflection frontmatter should use `id`, `locale`, `title`, `slug`, `date`, `time`, `pinned`, `excerpt`, `tags`, and `state`.
 - Do not reintroduce legacy reflection fields such as `entryId`, `fragmentNumber`, or frontmatter-level `views`.
 
 ## Adding New Work
@@ -38,6 +38,7 @@
 - New API endpoint: use `lib/api/handler.ts` for shared behavior and keep route handlers thin.
 - New site-wide constants: add them to `config/site.ts`.
 - New reflections: create one file per locale under the date-based tree and keep the shared `id` stable across translations.
+- If a reflection is pinned, keep the `pinned` value aligned intentionally across locale variants unless there is an explicit editorial reason not to.
 - New content translations: use `pnpm translate:content` instead of manual copy-paste when possible.
 
 ## Validation

@@ -118,10 +118,10 @@ export default async function ReflectionPage(props: ReflectionPageProps) {
           <h1 className="max-w-3xl text-balance text-[2.5rem] font-medium tracking-[-0.05em] text-ink sm:text-[3.3rem]">
             {reflection.title}
           </h1>
-          <Meta locale={locale} reflection={reflection} />
-          <p className="mt-2 max-w-2xl text-[1.02rem] leading-8 text-muted sm:text-[1.08rem]">
+          <p className="max-w-2xl text-[1.02rem] leading-8 text-muted sm:text-[1.08rem]">
             {reflection.excerpt}
           </p>
+          <Meta locale={locale} reflection={reflection} />
         </header>
         <Body content={reflection.content} />
 

@@ -13,6 +13,8 @@
     "translate:content": "tsx scripts/translate-content.ts"
   },
   "dependencies": {
+    "@iconify-json/solar": "^1.2.5",
+    "@iconify/react": "^6.0.2",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "next": "16.2.9",

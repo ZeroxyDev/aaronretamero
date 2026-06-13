@@ -12,6 +12,7 @@ export type ReflectionFrontmatter = {
   slug: string;
   date: string;
   time: string;
+  pinned: boolean;
   excerpt: string;
   tags: string[];
   state: string;
@@ -48,7 +49,9 @@ function resolveReflectionTranslation(group: ReflectionGroup, locale: Locale) {
 }
 
 function parseReflectionFile(fileContent: string): ReflectionFrontmatter & { content: string } {
-  const { frontmatter, content } = parseContentDocument<Record<string, string | string[] | number>>(
+  const { frontmatter, content } = parseContentDocument<
+    Record<string, string | string[] | number | boolean>
+  >(
     fileContent,
   );
   const data = frontmatter;
@@ -60,6 +63,7 @@ function parseReflectionFile(fileContent: string): ReflectionFrontmatter & { con
     slug: String(data.slug),
     date: String(data.date),
     time: String(data.time),
+    pinned: data.pinned === true || String(data.pinned).toLowerCase() === "true",
     excerpt: String(data.excerpt),
     tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
     state: String(data.state),
@@ -231,6 +235,10 @@ export function getGroupedReflections(reflections: Reflection[]): GroupedReflect
   const years = new Map<string, ReflectionSummary[]>();
 
   reflections.forEach((reflection) => {
+    if (reflection.pinned) {
+      return;
+    }
+
     const [year] = reflection.date.split("-");
     const yearReflections = years.get(year) ?? [];
 
@@ -246,6 +254,14 @@ export function getGroupedReflections(reflections: Reflection[]): GroupedReflect
         (left, right) => getReflectionSortValue(right) - getReflectionSortValue(left),
       ),
     }));
+}
+
+export function getPinnedReflections(reflections: readonly Reflection[], limit = 3): ReflectionSummary[] {
+  return reflections
+    .filter((reflection) => reflection.pinned)
+    .sort((left, right) => getReflectionSortValue(right) - getReflectionSortValue(left))
+    .slice(0, limit)
+    .map(toSummary);
 }
 
 export function formatMonthDay(date: string, locale: Locale) {

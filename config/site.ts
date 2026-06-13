@@ -8,6 +8,7 @@ export const siteConfig = {
   },
   social: {
     primaryProfileUrl: "https://instagram.com/aaronretamero",
+    sourceUrl: "https://github.com/zeroxydev/aaronretamero",
     follow: {
       title: "Disocy",
       url: "https://disocy.com",

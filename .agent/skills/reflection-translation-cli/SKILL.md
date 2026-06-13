@@ -26,6 +26,7 @@ description: Use when creating or updating translated content files with the loc
   - `time`
 - Locale-owned fields:
   - `locale`
+  - `pinned`
   - `title`
   - `slug`
   - `excerpt`
@@ -69,6 +70,7 @@ description: Use when creating or updating translated content files with the loc
 
 - Preserve Markdown structure, headings, separators, and paragraph breaks.
 - Preserve tone and cadence as faithfully as possible.
+- Preserve the source reflection's `pinned` value in translated output.
 - Generate a natural target-language `slug` in kebab-case for reflections.
 - Write reflection output to `content/reflections/<target-locale>/<year>/<month>/<slug>.mdx`.
 - Write about output to `content/about/<target-locale>.mdx`.

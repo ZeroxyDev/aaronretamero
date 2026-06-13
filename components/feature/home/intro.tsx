@@ -16,7 +16,7 @@ export async function Intro({ locale, locales, routeMap }: IntroProps) {
   return (
     <section className="archive-shell mb-10 flex flex-col gap-4 pb-4 sm:mb-12 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:pb-6">
       <div>
-        <p className="text-[1.65rem] font-medium tracking-[-0.04em] text-ink">
+        <p className="max-w-3xl text-balance text-[1.65rem] font-medium tracking-[-0.05em] text-ink">
           {t("title")}
         </p>
         <p className="max-w-xl text-[1.02rem] leading-8 text-muted">

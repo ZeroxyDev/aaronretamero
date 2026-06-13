@@ -34,10 +34,84 @@ function getResponseText(payload: ResponsesApiOutput) {
   return text;
 }
 
-function extractJsonObject<T>(value: string) {
+function extractJsonCandidate(value: string) {
   const fencedMatch = value.match(/```(?:json)?\n([\s\S]*?)\n```/);
   const candidate = fencedMatch ? fencedMatch[1] : value;
-  return JSON.parse(candidate) as T;
+  const objectStart = candidate.indexOf("{");
+  const objectEnd = candidate.lastIndexOf("}");
+
+  if (objectStart !== -1 && objectEnd !== -1 && objectEnd > objectStart) {
+    return candidate.slice(objectStart, objectEnd + 1);
+  }
+
+  return candidate;
+}
+
+function repairInvalidJsonEscapes(value: string) {
+  let result = "";
+  let index = 0;
+  let inString = false;
+
+  while (index < value.length) {
+    const char = value[index];
+
+    if (char === '"' && value[index - 1] !== "\\") {
+      inString = !inString;
+      result += char;
+      index += 1;
+      continue;
+    }
+
+    if (inString && char === "\\") {
+      const next = value[index + 1];
+
+      if (next === undefined) {
+        result += "\\\\";
+        index += 1;
+        continue;
+      }
+
+      if (next === "u") {
+        const unicodeDigits = value.slice(index + 2, index + 6);
+
+        if (/^[0-9a-fA-F]{4}$/.test(unicodeDigits)) {
+          result += value.slice(index, index + 6);
+          index += 6;
+          continue;
+        }
+      }
+
+      if (!`"\\/bfnrtu`.includes(next)) {
+        result += "\\\\";
+        index += 1;
+        continue;
+      }
+    }
+
+    result += char;
+    index += 1;
+  }
+
+  return result;
+}
+
+function extractJsonObject<T>(value: string) {
+  const candidate = extractJsonCandidate(value).trim();
+
+  try {
+    return JSON.parse(candidate) as T;
+  } catch (error) {
+    const repairedCandidate = repairInvalidJsonEscapes(candidate);
+
+    try {
+      return JSON.parse(repairedCandidate) as T;
+    } catch {
+      const message = error instanceof Error ? error.message : "Unknown JSON parse error.";
+      throw new Error(
+        `Unable to parse OpenAI JSON response. ${message}\n\nResponse preview:\n${candidate.slice(0, 1200)}`,
+      );
+    }
+  }
 }
 
 export async function requestOpenAiJson<T>(prompt: string): Promise<T> {
