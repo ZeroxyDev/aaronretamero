@@ -18,6 +18,9 @@
 - Use server components by default.
 - Only use client components when browser APIs, effects, or interaction require them.
 - Keep view-specific composition in route files and reusable display logic in `components/feature/**`.
+- Reflection quote sharing is intentionally a client-only feature because it uses selection, canvas, clipboard, download, and Web Share APIs.
+- Keep quote sharing scoped to `components/feature/reflection/shareable-body.tsx`; preserve the split between selection handling, floating share UI, persistent highlight, and share-card rendering.
+- The generated share card should remain editorial and quiet: vertical story format, selected quote emphasized, nearby context blurred only inside the generated image, and a localized footer with reflection title, author, and site domain.
 
 ## Accessibility
 

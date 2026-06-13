@@ -66,6 +66,15 @@ Important content locations:
 - Reflections are grouped and resolved from local MDX files in `lib/reflections.ts`.
 - Alternate locale URLs for the same reflection are derived from the shared reflection `id`.
 
+### Shareable reflection quotes
+
+- Reflection pages support selecting text inside the article body and sharing that selection as an image.
+- The feature lives in `components/feature/reflection/shareable-body.tsx` and is used through `components/feature/reflection/body.tsx`.
+- The on-page interaction keeps the selected phrase visually highlighted and shows a compact floating share control near the selection.
+- The generated image is a vertical 9:16 story-style PNG. It keeps nearby context in the original order, renders the selected phrase clearly, blurs surrounding context, and adds a localized editorial footer.
+- Sharing uses the browser Web Share API when file sharing is available. If not, the image is downloaded and the selected text is copied when clipboard access is available.
+- Footer copy and share UI strings live in `messages/<locale>/pages/reflection.json`; site identity comes from `config/site.ts`.
+
 ### About page
 
 - `app/[locale]/sobre-mi/page.tsx` renders the localized about page.

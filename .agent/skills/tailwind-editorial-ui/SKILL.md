@@ -38,6 +38,9 @@ description: Use when editing UI, layout, typography, spacing, or visual hierarc
 - Metadata should read secondary but remain legible.
 - Archive rows should stay lightweight and text-led.
 - Reflection pages should prioritize reading flow over navigation chrome.
+- Quote sharing should feel like an editorial affordance, not a social widget. Keep the floating control compact, translucent, and anchored to the selected text.
+- When adjusting the share image, preserve the 9:16 story format, a clear selected quote, subdued blurred context, and the three-line footer hierarchy.
+- Keep the on-page persistent highlight readable and unblurred so users can still see exactly what they are sharing.
 
 ## Avoid
 

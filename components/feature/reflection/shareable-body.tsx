@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
 import { Markdown } from "@/lib/markdown";
 
 type ShareableBodyProps = {
@@ -16,12 +16,22 @@ type ShareableBodyProps = {
   selectionHint: string;
 };
 
-type SelectionState = {
+type SelectionRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  right: number;
+  bottom: number;
+};
+
+type SelectionSnapshot = {
   text: string;
   before: string;
   after: string;
-  x: number;
-  y: number;
+  anchorX: number;
+  anchorY: number;
+  rects: SelectionRect[];
 };
 
 type TextToken = {
@@ -34,6 +44,26 @@ type TextLine = {
   width: number;
 };
 
+type TextLayout = {
+  fontSize: number;
+  lineHeight: number;
+  lines: TextLine[];
+};
+
+type ShareCardPayload = {
+  footerTitle: string;
+  footerMeta: string;
+  siteDomain: string;
+  before: string;
+  quote: string;
+  after: string;
+};
+
+type ShareCardFooter = Pick<
+  ShareCardPayload,
+  "footerTitle" | "footerMeta" | "siteDomain"
+>;
+
 const MIN_SELECTION_LENGTH = 12;
 const CONTEXT_CHARACTERS = 120;
 const CONTEXT_LOOKAROUND_CHARACTERS = 420;
@@ -42,7 +72,8 @@ const CARD_HEIGHT = 1920;
 const CARD_PADDING_X = 116;
 const CARD_TOP = 240;
 const CARD_BOTTOM = 180;
-const FOOTER_GAP = 170;
+const FOOTER_GAP = 260;
+const FOOTER_LINE_GAP = 42;
 const POPOVER_WIDTH = 248;
 const POPOVER_HEIGHT = 64;
 const VIEWPORT_MARGIN = 12;
@@ -62,111 +93,8 @@ export function ShareableBody({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const proseRef = useRef<HTMLDivElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
-  const updateTimeoutRef = useRef<number | null>(null);
-  const [selectionState, setSelectionState] = useState<SelectionState | null>(null);
+  const selection = useShareSelection({ rootRef, proseRef, popoverRef });
   const [statusLabel, setStatusLabel] = useState<string | null>(null);
-
-  const resetSelection = useEffectEvent(() => {
-    setSelectionState(null);
-  });
-
-  const updateSelection = useEffectEvent(() => {
-    const root = rootRef.current;
-    const prose = proseRef.current;
-    const selection = window.getSelection();
-
-    if (!root || !prose || !selection || selection.rangeCount === 0 || selection.isCollapsed) {
-      resetSelection();
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    const commonAncestor = range.commonAncestorContainer;
-    const ancestorNode =
-      commonAncestor.nodeType === Node.TEXT_NODE
-        ? commonAncestor.parentNode
-        : commonAncestor;
-
-    if (!(ancestorNode instanceof Node) || !root.contains(ancestorNode)) {
-      resetSelection();
-      return;
-    }
-
-    const selectedText = selection.toString().replace(/\s+/g, " ").trim();
-
-    if (selectedText.length < MIN_SELECTION_LENGTH) {
-      resetSelection();
-      return;
-    }
-
-    const articleText = prose.innerText.replace(/\s+/g, " ").trim();
-    const startIndex = articleText.indexOf(selectedText);
-
-    if (startIndex === -1) {
-      resetSelection();
-      return;
-    }
-
-    const endIndex = startIndex + selectedText.length;
-    const rects = range.getClientRects();
-    const lastRect = rects.item(rects.length - 1) ?? range.getBoundingClientRect();
-
-    setSelectionState({
-      text: selectedText,
-      before: articleText
-        .slice(Math.max(0, startIndex - CONTEXT_LOOKAROUND_CHARACTERS), startIndex)
-        .trim(),
-      after: articleText
-        .slice(endIndex, Math.min(articleText.length, endIndex + CONTEXT_LOOKAROUND_CHARACTERS))
-        .trim(),
-      x: lastRect.right,
-      y: lastRect.bottom,
-    });
-  });
-
-  useEffect(() => {
-    function queueSelectionUpdate() {
-      if (updateTimeoutRef.current) {
-        window.clearTimeout(updateTimeoutRef.current);
-      }
-
-      updateTimeoutRef.current = window.setTimeout(() => {
-        updateSelection();
-      }, 40);
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target as Node;
-
-      if (popoverRef.current?.contains(target)) {
-        return;
-      }
-
-      if (rootRef.current?.contains(target)) {
-        resetSelection();
-      }
-    }
-
-    document.addEventListener("mouseup", queueSelectionUpdate);
-    document.addEventListener("touchend", queueSelectionUpdate);
-    document.addEventListener("keyup", queueSelectionUpdate);
-    document.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("resize", resetSelection);
-    window.addEventListener("scroll", resetSelection, true);
-
-    return () => {
-      if (updateTimeoutRef.current) {
-        window.clearTimeout(updateTimeoutRef.current);
-      }
-
-      document.removeEventListener("mouseup", queueSelectionUpdate);
-      document.removeEventListener("touchend", queueSelectionUpdate);
-      document.removeEventListener("keyup", queueSelectionUpdate);
-      document.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("resize", resetSelection);
-      window.removeEventListener("scroll", resetSelection, true);
-    };
-  }, []);
 
   useEffect(() => {
     if (!statusLabel) {
@@ -183,7 +111,7 @@ export function ShareableBody({
   }, [statusLabel]);
 
   async function handleShare() {
-    if (!selectionState) {
+    if (!selection) {
       return;
     }
 
@@ -192,12 +120,12 @@ export function ShareableBody({
         footerTitle,
         footerMeta,
         siteDomain,
-        before: selectionState.before,
-        quote: selectionState.text,
-        after: selectionState.after,
+        before: selection.before,
+        quote: selection.text,
+        after: selection.after,
       });
 
-      const file = new File([blob], `reflexion-${slugify(selectionState.text)}.png`, {
+      const file = new File([blob], `reflexion-${slugify(selection.text)}.png`, {
         type: "image/png",
       });
 
@@ -210,7 +138,7 @@ export function ShareableBody({
         await navigator.share({
           files: [file],
           title: reflectionTitle,
-          text: selectionState.text,
+          text: selection.text,
         });
         setStatusLabel(shareLabel);
         return;
@@ -224,7 +152,7 @@ export function ShareableBody({
       URL.revokeObjectURL(objectUrl);
 
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(selectionState.text);
+        await navigator.clipboard.writeText(selection.text);
         setStatusLabel(copiedLabel);
       } else {
         setStatusLabel(downloadLabel);
@@ -240,46 +168,248 @@ export function ShareableBody({
         <Markdown content={content} />
       </div>
 
-      {selectionState ? (
-        <div
-          className="pointer-events-none fixed z-30"
-          style={{
-            left: clamp(
-              selectionState.x - POPOVER_WIDTH,
-              VIEWPORT_MARGIN,
-              window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN,
-            ),
-            top: clamp(
-              selectionState.y + 12,
-              VIEWPORT_MARGIN,
-              window.innerHeight - POPOVER_HEIGHT - VIEWPORT_MARGIN,
-            ),
-          }}
-        >
-          <div
-            ref={popoverRef}
-            className="pointer-events-auto flex w-[15.5rem] items-center justify-between gap-3 rounded-[1.35rem] border border-white/10 bg-[color-mix(in_srgb,var(--color-surface)_78%,black)] px-2 py-2 text-sm text-ink shadow-[0_20px_60px_rgba(0,0,0,0.32)] ring-1 ring-black/10 backdrop-blur-2xl"
-            onMouseDown={(event) => event.preventDefault()}
-            onPointerDown={(event) => event.stopPropagation()}
-          >
-            <div className="min-w-0 px-2">
-              <p className="truncate text-[0.82rem] font-medium tracking-[-0.01em] text-ink">
-                {statusLabel ?? shareLabel}
-              </p>
-              <p className="truncate text-[0.72rem] text-muted">{selectionHint}</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleShare}
-              className="inline-flex shrink-0 items-center rounded-full bg-ink px-3 py-2 text-[0.78rem] font-medium text-canvas transition hover:opacity-90"
-            >
-              {shareLabel}
-            </button>
-          </div>
-        </div>
+      {selection ? (
+        <>
+          <SelectionHighlight rects={selection.rects} />
+          <SharePopover
+            popoverRef={popoverRef}
+            anchorX={selection.anchorX}
+            anchorY={selection.anchorY}
+            statusLabel={statusLabel}
+            shareLabel={shareLabel}
+            selectionHint={selectionHint}
+            onShare={handleShare}
+          />
+        </>
       ) : null}
     </div>
   );
+}
+
+function useShareSelection({
+  rootRef,
+  proseRef,
+  popoverRef,
+}: {
+  rootRef: RefObject<HTMLDivElement | null>;
+  proseRef: RefObject<HTMLDivElement | null>;
+  popoverRef: RefObject<HTMLDivElement | null>;
+}) {
+  const updateTimeoutRef = useRef<number | null>(null);
+  const [state, setState] = useState<SelectionSnapshot | null>(null);
+
+  const clearSelection = useEffectEvent(() => {
+    setState(null);
+  });
+
+  const updateSelection = useEffectEvent(() => {
+    const snapshot = getCurrentSelectionSnapshot(rootRef.current, proseRef.current);
+
+    if (!snapshot) {
+      clearSelection();
+      return;
+    }
+
+    setState(snapshot);
+  });
+
+  useEffect(() => {
+    function queueSelectionUpdate() {
+      if (updateTimeoutRef.current) {
+        window.clearTimeout(updateTimeoutRef.current);
+      }
+
+      updateTimeoutRef.current = window.setTimeout(updateSelection, 40);
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+
+      if (popoverRef.current?.contains(target)) {
+        return;
+      }
+
+      if (rootRef.current?.contains(target)) {
+        clearSelection();
+      }
+    }
+
+    document.addEventListener("mouseup", queueSelectionUpdate);
+    document.addEventListener("touchend", queueSelectionUpdate);
+    document.addEventListener("keyup", queueSelectionUpdate);
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("resize", clearSelection);
+    window.addEventListener("scroll", clearSelection, true);
+
+    return () => {
+      if (updateTimeoutRef.current) {
+        window.clearTimeout(updateTimeoutRef.current);
+      }
+
+      document.removeEventListener("mouseup", queueSelectionUpdate);
+      document.removeEventListener("touchend", queueSelectionUpdate);
+      document.removeEventListener("keyup", queueSelectionUpdate);
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("resize", clearSelection);
+      window.removeEventListener("scroll", clearSelection, true);
+    };
+  }, [popoverRef, rootRef]);
+
+  return state;
+}
+
+function SelectionHighlight({ rects }: { rects: SelectionRect[] }) {
+  return rects.map((rect, index) => (
+    <div
+      key={`${rect.left}-${rect.top}-${index}`}
+      className="pointer-events-none fixed z-20 rounded-[0.45rem] bg-[color-mix(in_srgb,var(--color-surface)_72%,white)]/55 ring-1 ring-white/8"
+      style={{
+        left: rect.left - 2,
+        top: rect.top - 1,
+        width: rect.width + 4,
+        height: rect.height + 2,
+      }}
+    />
+  ));
+}
+
+function SharePopover({
+  popoverRef,
+  anchorX,
+  anchorY,
+  statusLabel,
+  shareLabel,
+  selectionHint,
+  onShare,
+}: {
+  popoverRef: RefObject<HTMLDivElement | null>;
+  anchorX: number;
+  anchorY: number;
+  statusLabel: string | null;
+  shareLabel: string;
+  selectionHint: string;
+  onShare: () => void;
+}) {
+  return (
+    <div
+      className="pointer-events-none fixed z-30"
+      style={getPopoverStyle(anchorX, anchorY)}
+    >
+      <div
+        ref={popoverRef}
+        className="pointer-events-auto flex w-[15.5rem] items-center justify-between gap-3 rounded-[1.35rem] border border-white/10 bg-[color-mix(in_srgb,var(--color-surface)_78%,black)] px-2 py-2 text-sm text-ink shadow-[0_20px_60px_rgba(0,0,0,0.32)] ring-1 ring-black/10 backdrop-blur-2xl"
+        onMouseDown={(event) => event.preventDefault()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <div className="min-w-0 px-2">
+          <p className="truncate text-[0.82rem] font-medium tracking-[-0.01em] text-ink">
+            {statusLabel ?? shareLabel}
+          </p>
+          <p className="truncate text-[0.72rem] text-muted">{selectionHint}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onShare}
+          className="inline-flex shrink-0 items-center rounded-full bg-ink px-3 py-2 text-[0.78rem] font-medium text-canvas transition hover:opacity-90"
+        >
+          {shareLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getCurrentSelectionSnapshot(
+  root: HTMLDivElement | null,
+  prose: HTMLDivElement | null,
+): SelectionSnapshot | null {
+  const selection = window.getSelection();
+
+  if (!root || !prose || !selection || selection.rangeCount === 0 || selection.isCollapsed) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0);
+  const commonAncestor = range.commonAncestorContainer;
+  const ancestorNode =
+    commonAncestor.nodeType === Node.TEXT_NODE
+      ? commonAncestor.parentNode
+      : commonAncestor;
+
+  if (!(ancestorNode instanceof Node) || !root.contains(ancestorNode)) {
+    return null;
+  }
+
+  const selectedText = normalizeText(selection.toString());
+
+  if (selectedText.length < MIN_SELECTION_LENGTH) {
+    return null;
+  }
+
+  const articleText = normalizeText(prose.innerText);
+  const startIndex = articleText.indexOf(selectedText);
+
+  if (startIndex === -1) {
+    return null;
+  }
+
+  const endIndex = startIndex + selectedText.length;
+  const rects = getSelectionRects(range);
+  const anchor = getSelectionAnchor(range, rects);
+
+  return {
+    text: selectedText,
+    before: articleText
+      .slice(Math.max(0, startIndex - CONTEXT_LOOKAROUND_CHARACTERS), startIndex)
+      .trim(),
+    after: articleText
+      .slice(endIndex, Math.min(articleText.length, endIndex + CONTEXT_LOOKAROUND_CHARACTERS))
+      .trim(),
+    anchorX: anchor.x,
+    anchorY: anchor.y,
+    rects,
+  };
+}
+
+function getSelectionRects(range: Range): SelectionRect[] {
+  return Array.from(range.getClientRects())
+    .filter((rect) => rect.width > 0 && rect.height > 0)
+    .map((rect) => ({
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      right: rect.right,
+      bottom: rect.bottom,
+    }));
+}
+
+function getSelectionAnchor(range: Range, rects: SelectionRect[]) {
+  const lastRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
+
+  return {
+    x: lastRect.right,
+    y: lastRect.bottom,
+  };
+}
+
+function getPopoverStyle(anchorX: number, anchorY: number) {
+  return {
+    left: clamp(
+      anchorX - POPOVER_WIDTH,
+      VIEWPORT_MARGIN,
+      window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN,
+    ),
+    top: clamp(
+      anchorY + 12,
+      VIEWPORT_MARGIN,
+      window.innerHeight - POPOVER_HEIGHT - VIEWPORT_MARGIN,
+    ),
+  };
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function slugify(value: string) {
@@ -347,20 +477,30 @@ async function renderShareCard({
   before,
   quote,
   after,
-}: {
-  footerTitle: string;
-  footerMeta: string;
-  siteDomain: string;
-  before: string;
-  quote: string;
-  after: string;
-}) {
+}: ShareCardPayload) {
   const maxWidth = CARD_WIDTH - CARD_PADDING_X * 2;
-  const beforeText = trimContext(before, false);
-  const quoteText = quote;
-  const afterText = trimContext(after, true);
-  const textTokens = buildTextTokens(beforeText, quoteText, afterText);
+  const textTokens = buildTextTokens(
+    trimContext(before, false),
+    quote,
+    trimContext(after, true),
+  );
+  const { canvas, context } = createShareCanvas();
+  const textLayout = getShareCardTextLayout(context, textTokens, maxWidth);
 
+  drawShareCardBackground(context);
+  drawStyledTextBlock(
+    context,
+    textLayout.lines,
+    CARD_PADDING_X,
+    getTextBlockStartY(textLayout),
+    textLayout,
+  );
+  drawShareCardFooter(context, { footerTitle, footerMeta, siteDomain });
+
+  return exportCanvasAsPng(canvas);
+}
+
+function createShareCanvas() {
   const canvas = document.createElement("canvas");
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
@@ -371,18 +511,30 @@ async function renderShareCard({
     throw new Error("Canvas not available");
   }
 
-  const footerTitleFontSize = 28;
-  const footerBylineFontSize = 28;
-  const footerDomainFontSize = 26;
+  return { canvas, context };
+}
+
+function getShareCardTextLayout(
+  context: CanvasRenderingContext2D,
+  textTokens: TextToken[],
+  maxWidth: number,
+) {
   const availableHeight = CARD_HEIGHT - CARD_TOP - CARD_BOTTOM - FOOTER_GAP;
-  const textLayout = fitTextLayout(context, textTokens, maxWidth, availableHeight);
+  return fitTextLayout(context, textTokens, maxWidth, availableHeight);
+}
+
+function getTextBlockStartY(textLayout: TextLayout) {
+  const availableHeight = CARD_HEIGHT - CARD_TOP - CARD_BOTTOM - FOOTER_GAP;
   const textBlockHeight = textLayout.lines.length * textLayout.lineHeight;
-  const startY = clamp(
+
+  return clamp(
     Math.round(CARD_TOP + (availableHeight - textBlockHeight) / 2),
     CARD_TOP,
     CARD_HEIGHT - CARD_BOTTOM - FOOTER_GAP - textBlockHeight,
   );
+}
 
+function drawShareCardBackground(context: CanvasRenderingContext2D) {
   context.fillStyle = "#1a1917";
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
@@ -392,26 +544,32 @@ async function renderShareCard({
   gradient.addColorStop(1, "rgba(248, 247, 244, 0)");
   context.fillStyle = gradient;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+}
 
-  drawStyledTextBlock(context, textLayout.lines, CARD_PADDING_X, startY, textLayout);
-
+function drawShareCardFooter(
+  context: CanvasRenderingContext2D,
+  { footerTitle, footerMeta, siteDomain }: ShareCardFooter,
+) {
   context.filter = "none";
-  const footerTitleY = CARD_HEIGHT - CARD_BOTTOM - 112;
-  context.font = `500 ${footerTitleFontSize}px 'Site Font', sans-serif`;
+
+  const footerTitleY = CARD_HEIGHT - CARD_BOTTOM - 108;
+  context.font = "600 30px 'Site Font', sans-serif";
   context.fillStyle = "rgba(173, 162, 139, 0.92)";
   context.fillText(footerTitle, CARD_PADDING_X, footerTitleY);
 
-  const footerBylineY = footerTitleY + 54;
-  context.font = `500 ${footerBylineFontSize}px 'Site Font', sans-serif`;
-  context.fillStyle = "rgba(248, 247, 244, 0.97)";
+  const footerBylineY = footerTitleY + FOOTER_LINE_GAP;
+  context.font = "500 24px 'Site Font', sans-serif";
+  context.fillStyle = "rgba(248, 247, 244, 0.95)";
   context.fillText(footerMeta, CARD_PADDING_X, footerBylineY);
 
-  const footerDomainY = footerBylineY + 54;
-  context.font = `500 ${footerDomainFontSize}px 'Site Font', sans-serif`;
-  context.fillStyle = "rgba(173, 162, 139, 0.88)";
+  const footerDomainY = footerBylineY + FOOTER_LINE_GAP;
+  context.font = "500 21px 'Site Font', sans-serif";
+  context.fillStyle = "rgba(173, 162, 139, 0.82)";
   context.fillText(siteDomain, CARD_PADDING_X, footerDomainY);
+}
 
-  return await new Promise<Blob>((resolve, reject) => {
+function exportCanvasAsPng(canvas: HTMLCanvasElement) {
+  return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) {
         resolve(blob);
