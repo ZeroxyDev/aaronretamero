@@ -1,14 +1,18 @@
-import type {Locale} from "@/lib/i18n/config";
+import {getLocale} from "next-intl/server";
+import {defaultLocale, isLocale, type Locale} from "@/lib/i18n/config";
 import {getTranslator} from "@/lib/i18n/server";
 
 type LocalizedNotFoundProps = {
-  params: Promise<{locale: string}>;
+  params?: Promise<{locale: string}> | {locale: string};
 };
 
 export default async function LocalizedNotFoundPage({
   params
 }: LocalizedNotFoundProps) {
-  const {locale} = await params;
+  const routeParams = params ? await params : undefined;
+  const requestLocale = await getLocale().catch(() => undefined);
+  const resolvedLocale = routeParams?.locale ?? requestLocale ?? defaultLocale;
+  const locale = isLocale(resolvedLocale) ? resolvedLocale : defaultLocale;
   const t = await getTranslator(locale as Locale, "pages.errors");
 
   return (
