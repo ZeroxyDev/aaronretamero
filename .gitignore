@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local, no se versiona
+/CLAUDE.local.md
+/.agent/privado/
+/.agent/perfil-aaron.md
+/.claude/agents/
+/.claude/skills/crear-reflexion/
